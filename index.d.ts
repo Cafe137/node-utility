@@ -1,7 +1,9 @@
 /// <reference types="node" />
-import * as ChildProcess from 'child_process';
-import { ExecOptions } from 'child_process';
+import { ExecOptions, SpawnOptions } from 'child_process';
 type CafeObject<T = unknown> = Record<string, T>;
+declare function mkdirp(path: string): Promise<void>;
+declare function writeUtf8FileAsync(path: string, content: string): Promise<void>;
+declare function putFile(path: string, content: string): Promise<void>;
 declare function readUtf8FileAsync(path: string): Promise<string>;
 declare function readJsonAsync(path: string): Promise<CafeObject>;
 declare function writeJsonAsync(path: string, object: CafeObject, prettify?: boolean): Promise<void>;
@@ -24,13 +26,12 @@ declare function createLogger(module: string): {
     errorObject: (error: any, stackTrace?: boolean) => void;
 };
 declare function enableFileLogging(path: string): void;
-declare function mkdirp(path: string): Promise<void>;
 declare function execAsync(command: string, resolveWithErrors?: boolean, inherit?: boolean, options?: ExecOptions): Promise<{
     stdout: string | Buffer;
     stderr: string | Buffer;
     error?: string | Error;
 }>;
-declare function runProcess(command: string, args?: string[], options?: ChildProcess.SpawnOptions, onStdout?: (chunk: string | Buffer | Error) => void, onStderr?: (chunk: string | Buffer | Error) => void): Promise<number>;
+declare function runProcess(command: string, args?: string[], options?: SpawnOptions, onStdout?: (chunk: string | Buffer | Error) => void, onStderr?: (chunk: string | Buffer | Error) => void): Promise<number>;
 interface HeapMegabytes {
     used: string;
     total: string;
@@ -45,6 +46,8 @@ export declare const Exec: {
 export declare const Files: {
     existsAsync: typeof existsAsync;
     writeJsonAsync: typeof writeJsonAsync;
+    writeUtf8FileAsync: typeof writeUtf8FileAsync;
+    putFile: typeof putFile;
     readdirDeepAsync: typeof readdirDeepAsync;
     readUtf8FileAsync: typeof readUtf8FileAsync;
     readJsonAsync: typeof readJsonAsync;

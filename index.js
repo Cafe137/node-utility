@@ -1,11 +1,41 @@
 const cafe_utility_1 = require('cafe-utility')
-const ChildProcess = require('child_process')
-const NodeCrypto = require('crypto')
-const Fs = require('fs')
-const Path = require('path')
+const child_process_1 = require('child_process')
+const crypto_1 = require('crypto')
+const fs_1 = require('fs')
+const promises_1 = require('fs/promises')
+const path_1 = require('path')
+
+async function mkdirp(path) {
+    const segments = path.split('/')
+    let buffer = ''
+    for (const segment of segments) {
+        buffer += segment + '/'
+        if (!(await existsAsync(buffer))) {
+            try {
+                await (0, promises_1.mkdir)(buffer)
+            } catch (error) {
+                if (error.code !== 'EEXIST') {
+                    throw error
+                }
+            }
+        }
+    }
+}
+
+async function writeUtf8FileAsync(path, content) {
+    await (0, promises_1.writeFile)(path, content, 'utf8')
+}
+
+async function putFile(path, content) {
+    const [directory] = cafe_utility_1.Strings.splitOnce(path, '/', true)
+    if (directory) {
+        await mkdirp(directory)
+    }
+    await writeUtf8FileAsync(path, content)
+}
 
 async function readUtf8FileAsync(path) {
-    return Fs.promises.readFile(path, 'utf8')
+    return (0, promises_1.readFile)(path, 'utf8')
 }
 
 async function readJsonAsync(path) {
@@ -14,9 +44,9 @@ async function readJsonAsync(path) {
 
 async function writeJsonAsync(path, object, prettify) {
     if (prettify) {
-        await Fs.promises.writeFile(path, JSON.stringify(object, null, 4))
+        await (0, promises_1.writeFile)(path, JSON.stringify(object, null, 4))
     } else {
-        await Fs.promises.writeFile(path, JSON.stringify(object))
+        await (0, promises_1.writeFile)(path, JSON.stringify(object))
     }
 }
 
@@ -39,8 +69,8 @@ async function readCsv(path, skip = 0, delimiter = ',', quote = '"') {
 }
 
 async function* walkTreeAsync(path) {
-    for await (const directory of await Fs.promises.opendir(path)) {
-        const entry = Path.join(path, directory.name)
+    for await (const directory of await (0, promises_1.opendir)(path)) {
+        const entry = (0, path_1.join)(path, directory.name)
         if (directory.isDirectory()) {
             yield* await walkTreeAsync(entry)
         } else if (directory.isFile()) {
@@ -65,7 +95,7 @@ async function readdirDeepAsync(path, cwd) {
 
 async function existsAsync(path) {
     try {
-        await Fs.promises.stat(path)
+        await (0, promises_1.stat)(path)
         return true
     } catch (error) {
         return false
@@ -73,7 +103,7 @@ async function existsAsync(path) {
 }
 
 async function getFileSize(path) {
-    const stats = await Fs.promises.stat(path)
+    const stats = await (0, promises_1.stat)(path)
     return stats.size
 }
 
@@ -86,15 +116,15 @@ async function getDirectorySize(path) {
 }
 
 function getChecksum(data) {
-    const hash = NodeCrypto.createHash('sha1')
+    const hash = (0, crypto_1.createHash)('sha1')
     hash.update(data)
     return hash.digest('hex')
 }
 
 async function getChecksumOfFile(path) {
     return new Promise((resolve, reject) => {
-        const hash = NodeCrypto.createHash('sha1')
-        const readStream = Fs.createReadStream(path)
+        const hash = (0, crypto_1.createHash)('sha1')
+        const readStream = (0, fs_1.createReadStream)(path)
         readStream.on('error', reject)
         readStream.on('data', chunk => hash.update(chunk))
         readStream.on('end', () => resolve(hash.digest('hex')))
@@ -152,29 +182,12 @@ function createLogger(module) {
 }
 
 function enableFileLogging(path) {
-    loggerGlobalState.fileStream = Fs.createWriteStream(path, { flags: 'a' })
-}
-
-async function mkdirp(path) {
-    const segments = path.split('/')
-    let buffer = ''
-    for (const segment of segments) {
-        buffer += segment + '/'
-        if (!(await existsAsync(buffer))) {
-            try {
-                await Fs.promises.mkdir(buffer)
-            } catch (error) {
-                if (error.code !== 'EEXIST') {
-                    throw error
-                }
-            }
-        }
-    }
+    loggerGlobalState.fileStream = (0, fs_1.createWriteStream)(path, { flags: 'a' })
 }
 
 async function execAsync(command, resolveWithErrors, inherit, options) {
     return new Promise((resolve, reject) => {
-        const childProcess = ChildProcess.exec(command, options, (error, stdout, stderr) => {
+        const childProcess = (0, child_process_1.exec)(command, options, (error, stdout, stderr) => {
             if (error) {
                 if (resolveWithErrors) {
                     resolve({ error, stdout, stderr })
@@ -194,7 +207,7 @@ async function execAsync(command, resolveWithErrors, inherit, options) {
 
 async function runProcess(command, args, options, onStdout, onStderr) {
     return new Promise((resolve, reject) => {
-        const subprocess = ChildProcess.spawn(command, args || [], options || {})
+        const subprocess = (0, child_process_1.spawn)(command, args || [], options || {})
         subprocess?.stdout?.on(
             'data',
             onStdout ||
@@ -244,6 +257,8 @@ exports.Exec = {
 exports.Files = {
     existsAsync,
     writeJsonAsync,
+    writeUtf8FileAsync,
+    putFile,
     readdirDeepAsync,
     readUtf8FileAsync,
     readJsonAsync,
